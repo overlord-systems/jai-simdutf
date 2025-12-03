@@ -1,7 +1,7 @@
 //
 // This file was auto-generated using the following command:
 //
-// jai generate.jai
+// jai generate.jai - -compile
 //
 
 
@@ -2584,9 +2584,10 @@ haswell :: struct {
         // Walks through a buffer in block-sized increments, loading the last part with
         // spaces
         buf_block_reader :: struct(STEP_SIZE: u64) {
-            buf: *u8;
-
-            idx: u64;
+            buf:          *u8;
+            len:          u64;
+            lenminusstep: u64;
+            idx:          u64;
         }
 
         utf8_validation :: struct {
@@ -2764,9 +2765,10 @@ westmere :: struct {
         // Walks through a buffer in block-sized increments, loading the last part with
         // spaces
         buf_block_reader :: struct(STEP_SIZE: u64) {
-            buf: *u8;
-
-            idx: u64;
+            buf:          *u8;
+            len:          u64;
+            lenminusstep: u64;
+            idx:          u64;
         }
 
         utf8_validation :: struct {
