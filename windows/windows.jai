@@ -1,7 +1,7 @@
 //
 // This file was auto-generated using the following command:
 //
-// jai generate.jai - -compile
+// jai generate.jai
 //
 
 
@@ -2393,7 +2393,7 @@ icelake :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd16 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16
+                        // simd16 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16
             simd16__RAW :: struct(T: Type) {}
 
             /* end file src/simdutf/icelake/simd16-inl.h */
@@ -2404,7 +2404,7 @@ icelake :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd32 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd32
+                        // simd32 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd32
             simd32__RAW :: struct(T: Type) {}
         }
 
@@ -2466,7 +2466,7 @@ haswell :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // base without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base
+                        // base without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base
             base__RAW :: struct(Child: Type) {}
 
             // Forward-declared so they can be used by splat and friends.
@@ -2476,7 +2476,7 @@ haswell :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd8 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8
+                        // simd8 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8
             simd8__RAW :: struct(T: Type) {}
 
             base8 :: struct(T: Type, Mask: Type = simd8) {
@@ -2484,9 +2484,9 @@ haswell :: struct {
                 #if size_of(base8__RAW(T, Mask)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base__raw; #as base: base(simd8(T)); // Support cast to base
+                #overlay (base__raw) #as base: base(simd8(T)); // Support cast to base
             }
-                        // base8 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8
+                        // base8 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8
             base8__RAW :: struct(T: Type, Mask: Type = simd8) {
                 using base__raw: base__RAW(simd8(T));
             }
@@ -2496,9 +2496,9 @@ haswell :: struct {
                 #if size_of(base8_numeric__RAW(T)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base8__raw; #as base8: base8(T); // Support cast to base8
+                #overlay (base8__raw) #as base8: base8(T); // Support cast to base8
             }
-                        // base8_numeric without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8_numeric
+                        // base8_numeric without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8_numeric
             base8_numeric__RAW :: struct(T: Type) {
                 using,except(T) base8__raw: base8__RAW(T);
             }
@@ -2509,7 +2509,7 @@ haswell :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd8x64 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8x64
+                        // simd8x64 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8x64
             simd8x64__RAW :: struct(T: Type) {}
 
             simd16 :: struct(T: Type) {
@@ -2518,7 +2518,7 @@ haswell :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd16 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16
+                        // simd16 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16
             simd16__RAW :: struct(T: Type) {}
 
             base16 :: struct(T: Type, Mask: Type = simd16) {
@@ -2526,9 +2526,9 @@ haswell :: struct {
                 #if size_of(base16__RAW(T, Mask)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base__raw; #as base: base(simd16(T)); // Support cast to base
+                #overlay (base__raw) #as base: base(simd16(T)); // Support cast to base
             }
-                        // base16 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16
+                        // base16 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16
             base16__RAW :: struct(T: Type, Mask: Type = simd16) {
                 using base__raw: base__RAW(simd16(T));
                 bitmask_type :: u32;
@@ -2539,9 +2539,9 @@ haswell :: struct {
                 #if size_of(base16_numeric__RAW(T)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base16__raw; #as base16: base16(T); // Support cast to base16
+                #overlay (base16__raw) #as base16: base16(T); // Support cast to base16
             }
-                        // base16_numeric without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16_numeric
+                        // base16_numeric without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16_numeric
             base16_numeric__RAW :: struct(T: Type) {
                 using,except(T) base16__raw: base16__RAW(T);
             }
@@ -2552,7 +2552,7 @@ haswell :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd16x32 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16x32
+                        // simd16x32 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16x32
             simd16x32__RAW :: struct(T: Type) {}
 
             /* end file src/simdutf/haswell/simd16-inl.h */
@@ -2563,7 +2563,7 @@ haswell :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd32 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd32
+                        // simd32 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd32
             simd32__RAW :: struct(T: Type) {}
 
             /* end file src/simdutf/haswell/simd32-inl.h */
@@ -2574,7 +2574,7 @@ haswell :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd64 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd64
+                        // simd64 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd64
             simd64__RAW :: struct(T: Type) {}
         }
 
@@ -2639,7 +2639,7 @@ westmere :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // base without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base
+                        // base without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base
             base__RAW :: struct(Child: Type) {}
 
             // Forward-declared so they can be used by splat and friends.
@@ -2649,7 +2649,7 @@ westmere :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd8 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8
+                        // simd8 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8
             simd8__RAW :: struct(T: Type) {}
 
             base8 :: struct(T: Type, Mask: Type = simd8) {
@@ -2657,9 +2657,9 @@ westmere :: struct {
                 #if size_of(base8__RAW(T, Mask)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base__raw; #as base: base(simd8(T)); // Support cast to base
+                #overlay (base__raw) #as base: base(simd8(T)); // Support cast to base
             }
-                        // base8 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8
+                        // base8 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8
             base8__RAW :: struct(T: Type, Mask: Type = simd8) {
                 using base__raw: base__RAW(simd8(T));
                 bitmask_t :: u16;
@@ -2671,9 +2671,9 @@ westmere :: struct {
                 #if size_of(base8_numeric__RAW(T)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base8__raw; #as base8: base8(T); // Support cast to base8
+                #overlay (base8__raw) #as base8: base8(T); // Support cast to base8
             }
-                        // base8_numeric without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8_numeric
+                        // base8_numeric without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8_numeric
             base8_numeric__RAW :: struct(T: Type) {
                 using,except(T) base8__raw: base8__RAW(T);
             }
@@ -2684,7 +2684,7 @@ westmere :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd8x64 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8x64
+                        // simd8x64 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8x64
             simd8x64__RAW :: struct(T: Type) {}
 
             /* begin file src/simdutf/westmere/simd16-inl.h */
@@ -2694,7 +2694,7 @@ westmere :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd16 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16
+                        // simd16 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16
             simd16__RAW :: struct(T: Type) {}
 
             base16 :: struct(T: Type, Mask: Type = simd16) {
@@ -2702,9 +2702,9 @@ westmere :: struct {
                 #if size_of(base16__RAW(T, Mask)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base__raw; #as base: base(simd16(T)); // Support cast to base
+                #overlay (base__raw) #as base: base(simd16(T)); // Support cast to base
             }
-                        // base16 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16
+                        // base16 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16
             base16__RAW :: struct(T: Type, Mask: Type = simd16) {
                 using base__raw: base__RAW(simd16(T));
             }
@@ -2714,9 +2714,9 @@ westmere :: struct {
                 #if size_of(base16_numeric__RAW(T)) == 0 {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
-                #place base16__raw; #as base16: base16(T); // Support cast to base16
+                #overlay (base16__raw) #as base16: base16(T); // Support cast to base16
             }
-                        // base16_numeric without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16_numeric
+                        // base16_numeric without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16_numeric
             base16_numeric__RAW :: struct(T: Type) {
                 using,except(T) base16__raw: base16__RAW(T);
             }
@@ -2727,7 +2727,7 @@ westmere :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd16x32 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16x32
+                        // simd16x32 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16x32
             simd16x32__RAW :: struct(T: Type) {}
 
             /* end file src/simdutf/westmere/simd16-inl.h */
@@ -2738,7 +2738,7 @@ westmere :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd32 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd32
+                        // simd32 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd32
             simd32__RAW :: struct(T: Type) {}
 
             /* end file src/simdutf/westmere/simd32-inl.h */
@@ -2749,14 +2749,15 @@ westmere :: struct {
                     __empty_struct_padding: u8; // C++ makes empty structs have length 1
                 }
             }
-                        // simd64 without empty struct padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd64
+                        // simd64 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd64
             simd64__RAW :: struct(T: Type) {}
         }
 
         /* begin file src/westmere/sse_convert_utf32_to_utf16.cpp */
         expansion_result_t :: struct {
             u16count: u64;
-            #place u16count; expansion_result_t_alignment: u8 #align 16;
+
+            _:        [0] u8 #align 16; // Force expansion_result_t alignment to match the C/C++ equivalent
         }
 
         // --- decoding - base64 class --------------------------------
