@@ -79,12 +79,20 @@ generate_bindings :: (args: []string) -> bool {
 
     } else #if OS == .LINUX {
 
+        assert(false, "this OS is currently unsupported. You might be able to add support for it though!");
+
         #if CPU != .X64 {
             assert("CPU=% isn't currently supported. You might be able to add support for it though!", CPU);
         }
 
         output_filename = "linux/linux.jai";
         array_add(*opts.library_search_paths, "linux/bin/x64");
+
+        // @TODO: For some reason those are needed, but still not enough because
+        // we get errors about intrinsics not being found...and since this is c++ we can't reuse the windows bindings
+        // because of name mangling.
+        array_add(*opts.system_include_paths, "/usr/include/c++/11");
+        array_add(*opts.system_include_paths, "/usr/lib/llvm-14/lib/clang/14.0.0/include");
 
         opts.footer = FOOTER_LINUX;
         opts.generate_library_declarations = false;
