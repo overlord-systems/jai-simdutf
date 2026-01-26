@@ -1,7 +1,7 @@
 //
 // This file was auto-generated using the following command:
 //
-// jai generate.jai
+// jai generate.jai - -compile
 //
 
 
@@ -16,7 +16,7 @@ SIMDUTF_CLANG_VISUAL_STUDIO :: 1;
 
 SIMDUTF_IS_X86_64 :: 1;
 
-SIMDUTF_VERSION_STRING :: "7.7.0";
+SIMDUTF_VERSION_STRING :: "8.0.0";
 
 SIMDUTF_FEATURE_DETECT_ENCODING :: 1;
 SIMDUTF_FEATURE_ASCII :: 1;
@@ -38,24 +38,23 @@ SIMDUTF_CAN_ALWAYS_RUN_ICELAKE :: 0;
 
 SIMDUTF_IMPLEMENTATION_HASWELL :: SIMDUTF_IS_X86_64;
 
-SIMDUTF_CAN_ALWAYS_RUN_HASWELL :: 0;
+SIMDUTF_CAN_ALWAYS_RUN_HASWELL :: 1;
 
 SIMDUTF_SIMD_HAS_BYTEMASK :: 1;
 
-SIMDUTF_IMPLEMENTATION_WESTMERE :: SIMDUTF_IS_X86_64;
+SIMDUTF_IMPLEMENTATION_WESTMERE :: 0;
 
 SIMDUTF_CAN_ALWAYS_RUN_WESTMERE :: 0;
 
-SIMDUTF_CAN_ALWAYS_RUN_LSX :: 0;
+SIMDUTF_CAN_ALWAYS_RUN_LASX :: 0;
 
 SIMDUTF_CAN_ALWAYS_RUN_FALLBACK :: SIMDUTF_IMPLEMENTATION_FALLBACK;
 
-SIMDUTF_CAN_ALWAYS_RUN_LASX :: 0;
+SIMDUTF_CAN_ALWAYS_RUN_LSX :: 0;
 
-SIMDUTF_IMPLEMENTATION_FALLBACK :: 1;
-//
-// Implementation-specific overrides
-//
+SIMDUTF_IMPLEMENTATION_FALLBACK :: 0;
+/* end file src/generic/base64.h */
+/* begin file src/generic/find.h */
 
 encoding_type :: enum s32 {
     UTF8        :: 1;
@@ -71,6 +70,7 @@ encoding_type :: enum s32 {
 endianness :: enum s32 {
     LITTLE :: 0;
     BIG    :: 1;
+    NATIVE :: 0;
 }
 
 match_system :: (e: endianness) -> bool #foreign libsimdutf "?match_system@simdutf@@YA_NW4endianness@1@@Z";
@@ -137,15 +137,17 @@ full_result :: struct {
     // meaningful when error is not SUCCESS
     padding_error  := false;
 
+    Constructor :: (this: *full_result) -> void #cpp_method #foreign libsimdutf "??0full_result@simdutf@@QEAA@XZ";
+
     Constructor :: (this: *full_result, err: error_code, pos_in: u64, pos_out: u64) -> void #cpp_method #foreign libsimdutf "??0full_result@simdutf@@QEAA@W4error_code@1@_K1@Z";
 
     Constructor :: (this: *full_result, err: error_code, pos_in: u64, pos_out: u64, padding_err: bool) -> void #cpp_method #foreign libsimdutf "??0full_result@simdutf@@QEAA@W4error_code@1@_K1_N@Z";
 }
 
 SIMDUTF_VERSION :: enum s32 {
-    MAJOR    :: 7;
+    MAJOR    :: 8;
 
-    MINOR    :: 7;
+    MINOR    :: 0;
 
     REVISION :: 0;
 
@@ -154,6 +156,41 @@ SIMDUTF_VERSION :: enum s32 {
     SIMDUTF_VERSION_MINOR    :: MINOR;
 
     SIMDUTF_VERSION_REVISION :: REVISION;
+}
+
+scalar :: struct {
+    u16_swap_bytes :: (word: u16) -> u16 #foreign libsimdutf "?u16_swap_bytes@scalar@simdutf@@YAGG@Z";
+
+    u32_swap_bytes :: (word: u32) -> u32 #foreign libsimdutf "?u32_swap_bytes@scalar@simdutf@@YAII@Z";
+
+    utf32 :: struct {
+        validate :: (buf: *u32, len: u64) -> bool #foreign libsimdutf "?validate@utf32@scalar@simdutf@@YA_NPEB_U_K@Z";
+
+        validate_with_errors :: (buf: *u32, len: u64) -> result #cpp_return_type_is_non_pod #foreign libsimdutf "?validate_with_errors@utf32@scalar@simdutf@@YA?AUresult@3@PEB_U_K@Z";
+
+        utf8_length_from_utf32 :: (p: *u32, len: u64) -> u64 #foreign libsimdutf "?utf8_length_from_utf32@utf32@scalar@simdutf@@YA_KPEB_U_K@Z";
+
+        utf16_length_from_utf32 :: (p: *u32, len: u64) -> u64 #foreign libsimdutf "?utf16_length_from_utf32@utf32@scalar@simdutf@@YA_KPEB_U_K@Z";
+    }
+
+    utf16 :: struct {
+        change_endianness_utf16 :: (input: *u16, size: u64, output: *u16) -> void #foreign libsimdutf "?change_endianness_utf16@utf16@scalar@simdutf@@YAXPEB_S_KPEA_S@Z";
+
+        high_surrogate :: (c: u16) -> bool #foreign libsimdutf "?high_surrogate@utf16@scalar@simdutf@@YA_N_S@Z";
+    }
+
+    anon_namespace_1 :: struct {
+        base64 :: struct {
+            reduced_input :: struct {
+                equalsigns:        u64; // number of padding characters '=', typically 0, 1, 2.
+                equallocation:     u64; // location of the first padding character if any
+                srclen:            u64; // length of the input buffer before padding
+                // length of the input buffer with padding but
+                // without ignorable characters
+                full_input_length: u64;
+            }
+        }
+    }
 }
 
 default_line_length: u64 : 76;
@@ -514,16 +551,6 @@ convert_latin1_to_utf16be :: (input: *u8, length: u64, utf16_output: *u16) -> u6
 * encode the UTF-16 string as Latin1
 */
 latin1_length_from_utf16 :: (length: u64) -> u64 #foreign libsimdutf "?latin1_length_from_utf16@simdutf@@YA_K_K@Z";
-
-/**
-* Compute the number of code units that this Latin1 string would require in
-* UTF-16 format.
-*
-* @param length        the length of the string in Latin1 code units (char)
-* @return the length of the string in 2-byte code units (char16_t) required to
-* encode the Latin1 string as UTF-16
-*/
-utf16_length_from_latin1 :: (length: u64) -> u64 #foreign libsimdutf "?utf16_length_from_latin1@simdutf@@YA_K_K@Z";
 
 /**
 * Convert Latin1 string into UTF-32 string.
@@ -1099,7 +1126,7 @@ convert_utf16be_to_utf8_with_errors :: (input: *u16, length: u64, utf8_buffer: *
 /**
 * Using native endianness, convert valid UTF-16 string into UTF-8 string.
 *
-* This function assumes that the input string is valid UTF-16LE.
+* This function assumes that the input string is valid UTF-16.
 *
 * This function is not BOM-aware.
 *
@@ -1177,8 +1204,7 @@ convert_valid_utf16be_to_latin1 :: (input: *u16, length: u64, latin1_buffer: *u8
 /**
 * Convert valid UTF-16LE string into UTF-8 string.
 *
-* This function assumes that the input string is valid UTF-16LE and that it can
-* be represented as Latin1.
+* This function assumes that the input string is valid UTF-16LE
 *
 * This function is not BOM-aware.
 *
@@ -1565,16 +1591,6 @@ convert_valid_utf32_to_latin1 :: (input: *u32, length: u64, latin1_buffer: *u8) 
 latin1_length_from_utf32 :: (length: u64) -> u64 #foreign libsimdutf "?latin1_length_from_utf32@simdutf@@YA_K_K@Z";
 
 /**
-* Compute the number of bytes that this Latin1 string would require in UTF-32
-* format.
-*
-* @param length        the length of the string in Latin1 code units (char)
-* @return the length of the string in 4-byte code units (char32_t) required to
-* encode the Latin1 string as UTF-32
-*/
-utf32_length_from_latin1 :: (length: u64) -> u64 #foreign libsimdutf "?utf32_length_from_latin1@simdutf@@YA_K_K@Z";
-
-/**
 * Convert possibly broken UTF-32 string into UTF-16BE string.
 *
 * During the conversion also validation of the input string is done.
@@ -1957,10 +1973,84 @@ last_chunk_handling_options :: enum u64 {
 
 is_partial :: (options: last_chunk_handling_options) -> bool #foreign libsimdutf "?is_partial@simdutf@@YA_NW4last_chunk_handling_options@1@@Z";
 
+detail :: struct {
+    // this has been moved to implementation.h
+    // simdutf_warn_unused size_t base64_length_from_binary_with_lines(
+    //     size_t length, base64_options options, size_t line_length) noexcept;
+    // }
+    find :: (start: *u8, end: *u8, character: u8) -> *u8 #foreign libsimdutf "?find@detail@simdutf@@YAPEBDPEBD0D@Z";
+
+    find :: (start: *u16, end: *u16, character: u16) -> *u16 #foreign libsimdutf "?find@detail@simdutf@@YAPEB_SPEB_S0_S@Z";
+}
+
+/**
+* Find the first occurrence of a character in a string. If the character is
+* not found, return a pointer to the end of the string.
+* @param start        the start of the string
+* @param end          the end of the string
+* @param character    the character to find
+* @return a pointer to the first occurrence of the character in the string,
+* or a pointer to the end of the string if the character is not found.
+*
+*/
+find :: (start: *u8, end: *u8, character: u8) -> *u8 #foreign libsimdutf "?find@simdutf@@YAPEBDPEBD0D@Z";
+
+find :: (start: *u16, end: *u16, character: u16) -> *u16 #foreign libsimdutf "?find@simdutf@@YAPEB_SPEB_S0_S@Z";
+
+anon_namespace_2 :: struct {
+    tables :: struct {
+        base64 :: struct {
+            to_base64_value: [256] u8;
+
+            to_base64_url_value: [256] u8;
+
+            to_base64_default_or_url_value: [256] u8;
+        }
+
+        utf8_to_utf16 :: struct {
+            /**
+            * utf8bigindex uses about 8 kB
+            * shufutf8 uses about 3344 B
+            *
+            * So we use a bit over 11 kB. It would be
+            * easy to save about 4 kB by only
+            * storing the index in utf8bigindex, and
+            * deriving the consumed bytes otherwise.
+            * However, this may come at a significant (10% to 20%)
+            * performance penalty.
+            */
+            shufutf8: [209] [16] u8;
+
+            /* number of two bytes : 64 */
+            /* number of two + three bytes : 145 */
+            /* number of two + three + four bytes : 209 */
+            utf8bigindex: [4096] [2] u8;
+        }
+
+        utf16_to_utf8 :: struct {
+            // 1 byte for length, 16 bytes for mask
+            pack_1_2_utf8_bytes: [256] [17] u8;
+
+            // 1 byte for length, 16 bytes for mask
+            pack_1_2_3_utf8_bytes: [256] [17] u8;
+        }
+
+        utf32_to_utf16 :: struct {
+            pack_utf32_to_utf16le: [16] [16] u8;
+
+            pack_utf32_to_utf16be: [16] [16] u8;
+        }
+    }
+}
+
 /**
 * Provide the maximal binary length in bytes given the base64 input.
-* In general, if the input contains ASCII spaces, the result will be less than
-* the maximum length.
+* As long as the input does not contain ignorable characters (e.g., ASCII
+* spaces or linefeed characters), the result is exact. In particular, the
+* function checks for padding characters.
+*
+* The function is fast (constant time). It checks up to two characters at
+* the end of the string. The input is not otherwise validated or read.
 *
 * @param input         the base64 input to process
 * @param length        the length of the base64 input in bytes
@@ -1970,8 +2060,12 @@ maximal_binary_length_from_base64 :: (input: *u8, length: u64) -> u64 #foreign l
 
 /**
 * Provide the maximal binary length in bytes given the base64 input.
-* In general, if the input contains ASCII spaces, the result will be less than
-* the maximum length.
+* As long as the input does not contain ignorable characters (e.g., ASCII
+* spaces or linefeed characters), the result is exact. In particular, the
+* function checks for padding characters.
+*
+* The function is fast (constant time). It checks up to two characters at
+* the end of the string. The input is not otherwise validated or read.
 *
 * @param input         the base64 input to process, in ASCII stored as 16-bit
 * units
@@ -2163,46 +2257,18 @@ binary_to_base64_with_lines :: (input: *u8, length: u64, output: *u8, line_lengt
 base64_to_binary :: (input: *u16, length: u64, output: *u8, options: base64_options = .default, last_chunk_options: last_chunk_handling_options = .loose) -> result #cpp_return_type_is_non_pod #foreign libsimdutf "?base64_to_binary@simdutf@@YA?AUresult@1@PEB_S_KPEADW4base64_options@1@W4last_chunk_handling_options@1@@Z";
 
 /**
-* Check if a character is an ignorabl base64 character.
+* Check if a character is an ignorable base64 character.
 * Checking a large input, character by character, is not computationally
 * efficient.
 *
 * @param input         the character to check
 * @param options       the base64 options to use, is base64_default by default.
-* @return true if the character is an ignorablee base64 character, false
+* @return true if the character is an ignorable base64 character, false
 * otherwise.
 */
 base64_ignorable :: (input: u8, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_ignorable@simdutf@@YA_NDW4base64_options@1@@Z";
 
 base64_ignorable :: (input: u16, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_ignorable@simdutf@@YA_N_SW4base64_options@1@@Z";
-
-/**
-* Check if a character is a valid base64 character.
-* Checking a large input, character by character, is not computationally
-* efficient.
-* Note that padding characters are not considered valid base64 characters in
-* this context, nor are spaces.
-*
-* @param input         the character to check
-* @param options       the base64 options to use, is base64_default by default.
-* @return true if the character is a base64 character, false otherwise.
-*/
-base64_valid :: (input: u8, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_valid@simdutf@@YA_NDW4base64_options@1@@Z";
-
-base64_valid :: (input: u16, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_valid@simdutf@@YA_N_SW4base64_options@1@@Z";
-
-/**
-* Check if a character is a valid base64 character or the padding character
-* ('='). Checking a large input, character by character, is not computationally
-* efficient.
-*
-* @param input         the character to check
-* @param options       the base64 options to use, is base64_default by default.
-* @return true if the character is a base64 character, false otherwise.
-*/
-base64_valid_or_padding :: (input: u8, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_valid_or_padding@simdutf@@YA_NDW4base64_options@1@@Z";
-
-base64_valid_or_padding :: (input: u16, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_valid_or_padding@simdutf@@YA_N_SW4base64_options@1@@Z";
 
 /**
 * Convert a base64 input to a binary output.
@@ -2273,118 +2339,11 @@ base64_valid_or_padding :: (input: u16, options: base64_options = .default) -> b
 */
 base64_to_binary_safe :: (input: *u8, length: u64, output: *u8, outlen: *u64, options: base64_options = .default, last_chunk_options: last_chunk_handling_options = .loose, decode_up_to_bad_char := false) -> result #cpp_return_type_is_non_pod #foreign libsimdutf "?base64_to_binary_safe@simdutf@@YA?AUresult@1@PEBD_KPEADAEA_KW4base64_options@1@W4last_chunk_handling_options@1@_N@Z";
 
+// the span overload has moved to the bottom of the file
 base64_to_binary_safe :: (input: *u16, length: u64, output: *u8, outlen: *u64, options: base64_options = .default, last_chunk_options: last_chunk_handling_options = .loose, decode_up_to_bad_char := false) -> result #cpp_return_type_is_non_pod #foreign libsimdutf "?base64_to_binary_safe@simdutf@@YA?AUresult@1@PEB_S_KPEADAEA_KW4base64_options@1@W4last_chunk_handling_options@1@_N@Z";
 
-/**
-* Find the first occurrence of a character in a string. If the character is
-* not found, return a pointer to the end of the string.
-* @param start        the start of the string
-* @param end          the end of the string
-* @param character    the character to find
-* @return a pointer to the first occurrence of the character in the string,
-* or a pointer to the end of the string if the character is not found.
-*
-*/
-find :: (start: *u8, end: *u8, character: u8) -> *u8 #foreign libsimdutf "?find@simdutf@@YAPEBDPEBD0D@Z";
-
-find :: (start: *u16, end: *u16, character: u16) -> *u16 #foreign libsimdutf "?find@simdutf@@YAPEB_SPEB_S0_S@Z";
-
-anon_namespace_1 :: struct {
-    tables :: struct {
-        base64 :: struct {
-            base64_default :: struct {
-                e0: [256] u8;
-
-                e1: [256] u8;
-
-                e2: [256] u8;
-
-                d0: [256] u32;
-
-                d1: [256] u32;
-
-                d2: [256] u32;
-
-                d3: [256] u32;
-            }
-
-            base64_url :: struct {
-                e0: [256] u8;
-
-                e1: [256] u8;
-
-                e2: [256] u8;
-
-                d0: [256] u32;
-
-                d1: [256] u32;
-
-                d2: [256] u32;
-
-                d3: [256] u32;
-            }
-
-            base64_default_or_url :: struct {
-                d0: [256] u32;
-
-                d1: [256] u32;
-
-                d2: [256] u32;
-
-                d3: [256] u32;
-            }
-
-            thintable_epi8: [256] u64;
-
-            pshufb_combine_table: [272] u8;
-
-            BitsSetTable256mul2: [256] u8;
-
-            to_base64_value: [256] u8;
-
-            to_base64_url_value: [256] u8;
-
-            to_base64_default_or_url_value: [256] u8;
-        }
-
-        utf8_to_utf16 :: struct {
-            /**
-            * utf8bigindex uses about 8 kB
-            * shufutf8 uses about 3344 B
-            *
-            * So we use a bit over 11 kB. It would be
-            * easy to save about 4 kB by only
-            * storing the index in utf8bigindex, and
-            * deriving the consumed bytes otherwise.
-            * However, this may come at a significant (10% to 20%)
-            * performance penalty.
-            */
-            shufutf8: [209] [16] u8;
-
-            /* number of two bytes : 64 */
-            /* number of two + three bytes : 145 */
-            /* number of two + three + four bytes : 209 */
-            utf8bigindex: [4096] [2] u8;
-        }
-
-        utf16_to_utf8 :: struct {
-            // 1 byte for length, 16 bytes for mask
-            pack_1_2_utf8_bytes: [256] [17] u8;
-
-            // 1 byte for length, 16 bytes for mask
-            pack_1_2_3_utf8_bytes: [256] [17] u8;
-        }
-
-        utf32_to_utf16 :: struct {
-            pack_utf32_to_utf16le: [16] [16] u8;
-
-            pack_utf32_to_utf16be: [16] [16] u8;
-        }
-    }
-}
-
 icelake :: struct {
-    anon_namespace_2 :: struct {
+    anon_namespace_3 :: struct {
         simd :: struct {
             /* begin file src/simdutf/icelake/simd16-inl.h */
             simd16 :: struct(T: Type) {
@@ -2457,7 +2416,7 @@ icelake :: struct {
 * Implementation for Haswell (Intel AVX2).
 */
 haswell :: struct {
-    anon_namespace_3 :: struct {
+    anon_namespace_4 :: struct {
         simd :: struct {
             // Forward-declared so they can be used by splat and friends.
             base :: struct(Child: Type) {
@@ -2627,206 +2586,311 @@ haswell :: struct {
     }
 }
 
-/**
-* Implementation for Westmere (Intel SSE4.2).
-*/
-westmere :: struct {
-    anon_namespace_4 :: struct {
-        simd :: struct {
-            base :: struct(Child: Type) {
-                using,except(Child) base__raw:              base__RAW(Child);
-                #if size_of(base__RAW(Child)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-            }
-                        // base without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base
-            base__RAW :: struct(Child: Type) {}
+/* C-friendly subset of simdutf errors */
+simdutf_error_code :: enum s32 {
+    SUCCESS                  :: 0;
+    HEADER_BITS              :: 1;
+    TOO_SHORT                :: 2;
+    TOO_LONG                 :: 3;
+    OVERLONG                 :: 4;
+    TOO_LARGE                :: 5;
+    SURROGATE                :: 6;
+    INVALID_BASE64_CHARACTER :: 7;
+    BASE64_INPUT_REMAINDER   :: 8;
+    BASE64_EXTRA_BITS        :: 9;
+    OUTPUT_BUFFER_TOO_SMALL  :: 10;
+    OTHER                    :: 11;
 
-            // Forward-declared so they can be used by splat and friends.
-            simd8 :: struct(T: Type) {
-                using,except(T) simd8__raw:             simd8__RAW(T);
-                #if size_of(simd8__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-            }
-                        // simd8 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8
-            simd8__RAW :: struct(T: Type) {}
-
-            base8 :: struct(T: Type, Mask: Type = simd8) {
-                using,except(T, Mask) base8__raw:             base8__RAW(T, Mask);
-                #if size_of(base8__RAW(T, Mask)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-                #overlay (base__raw) #as base: base(simd8(T)); // Support cast to base
-            }
-                        // base8 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8
-            base8__RAW :: struct(T: Type, Mask: Type = simd8) {
-                using base__raw: base__RAW(simd8(T));
-                bitmask_t :: u16;
-                bitmask2_t :: u32;
-            }
-
-            base8_numeric :: struct(T: Type) {
-                using,except(T) base8_numeric__raw:     base8_numeric__RAW(T);
-                #if size_of(base8_numeric__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-                #overlay (base8__raw) #as base8: base8(T); // Support cast to base8
-            }
-                        // base8_numeric without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base8_numeric
-            base8_numeric__RAW :: struct(T: Type) {
-                using,except(T) base8__raw: base8__RAW(T);
-            }
-
-            simd8x64 :: struct(T: Type) {
-                using,except(T) simd8x64__raw:          simd8x64__RAW(T);
-                #if size_of(simd8x64__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-            }
-                        // simd8x64 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd8x64
-            simd8x64__RAW :: struct(T: Type) {}
-
-            /* begin file src/simdutf/westmere/simd16-inl.h */
-            simd16 :: struct(T: Type) {
-                using,except(T) simd16__raw:            simd16__RAW(T);
-                #if size_of(simd16__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-            }
-                        // simd16 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16
-            simd16__RAW :: struct(T: Type) {}
-
-            base16 :: struct(T: Type, Mask: Type = simd16) {
-                using,except(T, Mask) base16__raw:            base16__RAW(T, Mask);
-                #if size_of(base16__RAW(T, Mask)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-                #overlay (base__raw) #as base: base(simd16(T)); // Support cast to base
-            }
-                        // base16 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16
-            base16__RAW :: struct(T: Type, Mask: Type = simd16) {
-                using base__raw: base__RAW(simd16(T));
-            }
-
-            base16_numeric :: struct(T: Type) {
-                using,except(T) base16_numeric__raw:    base16_numeric__RAW(T);
-                #if size_of(base16_numeric__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-                #overlay (base16__raw) #as base16: base16(T); // Support cast to base16
-            }
-                        // base16_numeric without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from base16_numeric
-            base16_numeric__RAW :: struct(T: Type) {
-                using,except(T) base16__raw: base16__RAW(T);
-            }
-
-            simd16x32 :: struct(T: Type) {
-                using,except(T) simd16x32__raw:         simd16x32__RAW(T);
-                #if size_of(simd16x32__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-            }
-                        // simd16x32 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd16x32
-            simd16x32__RAW :: struct(T: Type) {}
-
-            /* end file src/simdutf/westmere/simd16-inl.h */
-            /* begin file src/simdutf/westmere/simd32-inl.h */
-            simd32 :: struct(T: Type) {
-                using,except(T) simd32__raw:            simd32__RAW(T);
-                #if size_of(simd32__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-            }
-                        // simd32 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd32
-            simd32__RAW :: struct(T: Type) {}
-
-            /* end file src/simdutf/westmere/simd32-inl.h */
-            /* begin file src/simdutf/westmere/simd64-inl.h */
-            simd64 :: struct(T: Type) {
-                using,except(T) simd64__raw:            simd64__RAW(T);
-                #if size_of(simd64__RAW(T)) == 0 {
-                    __empty_struct_padding: u8; // C++ makes empty structs have length 1
-                }
-            }
-                        // simd64 without padding. Needed to generate a C++-equivalent struct layout when "inheriting" from simd64
-            simd64__RAW :: struct(T: Type) {}
-        }
-
-        /* begin file src/westmere/sse_convert_utf32_to_utf16.cpp */
-        expansion_result_t :: struct {
-            u16count: u64;
-
-            _:        [0] u8 #align 16; // Force expansion_result_t alignment to match the C/C++ equivalent
-        }
-
-        // --- decoding - base64 class --------------------------------
-        block64 :: struct {}
-
-        // Walks through a buffer in block-sized increments, loading the last part with
-        // spaces
-        buf_block_reader :: struct(STEP_SIZE: u64) {
-            buf:          *u8;
-            len:          u64;
-            lenminusstep: u64;
-            idx:          u64;
-        }
-
-        utf8_validation :: struct {
-            utf8_checker :: struct {
-                // If this is nonzero, there has been a UTF-8 error.
-                error:            simd.simd8(u8);
-
-                // The last input we received
-                prev_input_block: simd.simd8(u8);
-
-                // Whether the last input we received was incomplete (used for ASCII fast
-                // path)
-                prev_incomplete:  simd.simd8(u8);
-            }
-        }
-
-        utf8_to_utf16 :: struct {
-            validating_transcoder :: struct {
-                // If this is nonzero, there has been a UTF-8 error.
-                error: simd.simd8(u8);
-            }
-        }
-
-        utf8_to_utf32 :: struct {
-            validating_transcoder :: struct {
-                // If this is nonzero, there has been a UTF-8 error.
-                error: simd.simd8(u8);
-            }
-        }
-
-        utf8_to_latin1 :: struct {
-            validating_transcoder :: struct {
-                // If this is nonzero, there has been a UTF-8 error.
-                error: simd.simd8(u8);
-            }
-        }
-    }
+    SIMDUTF_ERROR_SUCCESS                  :: SUCCESS;
+    SIMDUTF_ERROR_HEADER_BITS              :: HEADER_BITS;
+    SIMDUTF_ERROR_TOO_SHORT                :: TOO_SHORT;
+    SIMDUTF_ERROR_TOO_LONG                 :: TOO_LONG;
+    SIMDUTF_ERROR_OVERLONG                 :: OVERLONG;
+    SIMDUTF_ERROR_TOO_LARGE                :: TOO_LARGE;
+    SIMDUTF_ERROR_SURROGATE                :: SURROGATE;
+    SIMDUTF_ERROR_INVALID_BASE64_CHARACTER :: INVALID_BASE64_CHARACTER;
+    SIMDUTF_ERROR_BASE64_INPUT_REMAINDER   :: BASE64_INPUT_REMAINDER;
+    SIMDUTF_ERROR_BASE64_EXTRA_BITS        :: BASE64_EXTRA_BITS;
+    SIMDUTF_ERROR_OUTPUT_BUFFER_TOO_SMALL  :: OUTPUT_BUFFER_TOO_SMALL;
+    SIMDUTF_ERROR_OTHER                    :: OTHER;
 }
 
-scalar :: struct {
-    u16_swap_bytes :: (word: u16) -> u16 #foreign libsimdutf "?u16_swap_bytes@scalar@simdutf@@YAGG@Z";
-
-    u32_swap_bytes :: (word: u32) -> u32 #foreign libsimdutf "?u32_swap_bytes@scalar@simdutf@@YAII@Z";
-
-    anon_namespace_6 :: struct {
-        base64 :: struct {
-            reduced_input :: struct {
-                equalsigns:        u64; // number of padding characters '=', typically 0, 1, 2.
-                equallocation:     u64; // location of the first padding character if any
-                srclen:            u64; // length of the input buffer before padding
-                // length of the input buffer with padding but
-                // without ignorable characters
-                full_input_length: u64;
-            }
-        }
-    }
+simdutf_result :: struct {
+    error: simdutf_error_code;
+    count: u64; /* position of error or number of code units validated */
 }
+
+simdutf_encoding_type :: enum s32 {
+    UNSPECIFIED :: 0;
+    UTF8        :: 1;
+    UTF16_LE    :: 2;
+    UTF16_BE    :: 4;
+    UTF32_LE    :: 8;
+    UTF32_BE    :: 16;
+
+    SIMDUTF_ENCODING_UNSPECIFIED :: UNSPECIFIED;
+    SIMDUTF_ENCODING_UTF8        :: UTF8;
+    SIMDUTF_ENCODING_UTF16_LE    :: UTF16_LE;
+    SIMDUTF_ENCODING_UTF16_BE    :: UTF16_BE;
+    SIMDUTF_ENCODING_UTF32_LE    :: UTF32_LE;
+    SIMDUTF_ENCODING_UTF32_BE    :: UTF32_BE;
+}
+
+/* Validate UTF-8: returns true iff input is valid UTF-8 */
+simdutf_validate_utf8 :: (buf: *u8, len: u64) -> bool #foreign libsimdutf;
+
+/* Validate UTF-8 with detailed result */
+simdutf_validate_utf8_with_errors :: (buf: *u8, len: u64) -> simdutf_result #foreign libsimdutf;
+
+/* Encoding detection */
+simdutf_autodetect_encoding :: (input: *u8, length: u64) -> simdutf_encoding_type #foreign libsimdutf;
+
+simdutf_detect_encodings :: (input: *u8, length: u64) -> s32 #foreign libsimdutf;
+
+/* ASCII validation */
+simdutf_validate_ascii :: (buf: *u8, len: u64) -> bool #foreign libsimdutf;
+
+simdutf_validate_ascii_with_errors :: (buf: *u8, len: u64) -> simdutf_result #foreign libsimdutf;
+
+/* UTF-16 ASCII checks */
+simdutf_validate_utf16_as_ascii :: (buf: *u16, len: u64) -> bool #foreign libsimdutf;
+
+simdutf_validate_utf16be_as_ascii :: (buf: *u16, len: u64) -> bool #foreign libsimdutf;
+
+simdutf_validate_utf16le_as_ascii :: (buf: *u16, len: u64) -> bool #foreign libsimdutf;
+
+/* UTF-16/UTF-8/UTF-32 validation (native/endian-specific) */
+simdutf_validate_utf16 :: (buf: *u16, len: u64) -> bool #foreign libsimdutf;
+
+simdutf_validate_utf16le :: (buf: *u16, len: u64) -> bool #foreign libsimdutf;
+
+simdutf_validate_utf16be :: (buf: *u16, len: u64) -> bool #foreign libsimdutf;
+
+simdutf_validate_utf16_with_errors :: (buf: *u16, len: u64) -> simdutf_result #foreign libsimdutf;
+
+simdutf_validate_utf16le_with_errors :: (buf: *u16, len: u64) -> simdutf_result #foreign libsimdutf;
+
+simdutf_validate_utf16be_with_errors :: (buf: *u16, len: u64) -> simdutf_result #foreign libsimdutf;
+
+simdutf_validate_utf32 :: (buf: *u32, len: u64) -> bool #foreign libsimdutf;
+
+simdutf_validate_utf32_with_errors :: (buf: *u32, len: u64) -> simdutf_result #foreign libsimdutf;
+
+/* to_well_formed UTF-16 helpers */
+simdutf_to_well_formed_utf16le :: (input: *u16, len: u64, output: *u16) -> void #foreign libsimdutf;
+
+simdutf_to_well_formed_utf16be :: (input: *u16, len: u64, output: *u16) -> void #foreign libsimdutf;
+
+simdutf_to_well_formed_utf16 :: (input: *u16, len: u64, output: *u16) -> void #foreign libsimdutf;
+
+/* Counting */
+simdutf_count_utf16 :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_count_utf16le :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_count_utf16be :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_count_utf8 :: (input: *u8, length: u64) -> u64 #foreign libsimdutf;
+
+/* Length estimators */
+simdutf_utf8_length_from_latin1 :: (input: *u8, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_latin1_length_from_utf8 :: (input: *u8, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_latin1_length_from_utf16 :: (length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_latin1_length_from_utf32 :: (length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_utf16_length_from_utf8 :: (input: *u8, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_utf32_length_from_utf8 :: (input: *u8, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_utf8_length_from_utf16 :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_utf8_length_from_utf16_with_replacement :: (input: *u16, length: u64) -> simdutf_result #foreign libsimdutf;
+
+simdutf_utf8_length_from_utf16le :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_utf8_length_from_utf16be :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_utf8_length_from_utf16le_with_replacement :: (input: *u16, length: u64) -> simdutf_result #foreign libsimdutf;
+
+simdutf_utf8_length_from_utf16be_with_replacement :: (input: *u16, length: u64) -> simdutf_result #foreign libsimdutf;
+
+/* Conversions: latin1 <-> utf8, utf8 <-> utf16/utf32, utf16 <-> utf8, etc. */
+simdutf_convert_latin1_to_utf8 :: (input: *u8, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_latin1_to_utf8_safe :: (input: *u8, length: u64, output: *u8, utf8_len: u64) -> u64 #foreign libsimdutf;
+
+simdutf_convert_latin1_to_utf16le :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_latin1_to_utf16be :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_latin1_to_utf32 :: (input: *u8, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf8_to_latin1 :: (input: *u8, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf16le :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf16be :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf16 :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf32 :: (input: *u8, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf8_to_latin1_with_errors :: (input: *u8, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf16_with_errors :: (input: *u8, length: u64, output: *u16) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf16le_with_errors :: (input: *u8, length: u64, output: *u16) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf16be_with_errors :: (input: *u8, length: u64, output: *u16) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf8_to_utf32_with_errors :: (input: *u8, length: u64, output: *u32) -> simdutf_result #foreign libsimdutf;
+
+/* Conversions assuming valid input */
+simdutf_convert_valid_utf8_to_latin1 :: (input: *u8, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf8_to_utf16le :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf8_to_utf16be :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf8_to_utf32 :: (input: *u8, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+/* UTF-16 -> UTF-8 and related conversions */
+simdutf_convert_utf16_to_utf8 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16le_to_utf8 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16be_to_utf8 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16_to_utf8_safe :: (input: *u16, length: u64, output: *u8, utf8_len: u64) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16_to_latin1 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16le_to_latin1 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16be_to_latin1 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16_to_latin1_with_errors :: (input: *u16, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf16le_to_latin1_with_errors :: (input: *u16, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf16be_to_latin1_with_errors :: (input: *u16, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf16_to_utf8_with_errors :: (input: *u16, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf16le_to_utf8_with_errors :: (input: *u16, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf16be_to_utf8_with_errors :: (input: *u16, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_valid_utf16_to_utf8 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf16_to_latin1 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf16le_to_latin1 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf16be_to_latin1 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf16le_to_utf8 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf16be_to_utf8 :: (input: *u16, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+/* UTF-16 <-> UTF-32 conversions */
+simdutf_convert_utf16_to_utf32 :: (input: *u16, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16le_to_utf32 :: (input: *u16, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16be_to_utf32 :: (input: *u16, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf16_to_utf32_with_errors :: (input: *u16, length: u64, output: *u32) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf16le_to_utf32_with_errors :: (input: *u16, length: u64, output: *u32) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_utf16be_to_utf32_with_errors :: (input: *u16, length: u64, output: *u32) -> simdutf_result #foreign libsimdutf;
+
+/* Valid UTF-16 conversions */
+simdutf_convert_valid_utf16_to_utf32 :: (input: *u16, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf16le_to_utf32 :: (input: *u16, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+simdutf_convert_valid_utf16be_to_utf32 :: (input: *u16, length: u64, output: *u32) -> u64 #foreign libsimdutf;
+
+/* UTF-32 -> ... conversions */
+simdutf_convert_utf32_to_utf8 :: (input: *u32, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf32_to_utf8_with_errors :: (input: *u32, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+simdutf_convert_valid_utf32_to_utf8 :: (input: *u32, length: u64, output: *u8) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf32_to_utf16 :: (input: *u32, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf32_to_utf16le :: (input: *u32, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf32_to_utf16be :: (input: *u32, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_utf32_to_latin1_with_errors :: (input: *u32, length: u64, output: *u8) -> simdutf_result #foreign libsimdutf;
+
+/* --- Find helpers --- */
+simdutf_find :: (start: *u8, end: *u8, character: u8) -> *u8 #foreign libsimdutf;
+
+simdutf_find_utf16 :: (start: *u16, end: *u16, character: u16) -> *u16 #foreign libsimdutf;
+
+/* --- Base64 enums and helpers --- */
+simdutf_base64_options :: enum s32 {
+    DEFAULT                       :: 0;
+    URL                           :: 1;
+    DEFAULT_NO_PADDING            :: 2;
+    URL_WITH_PADDING              :: 3;
+    DEFAULT_ACCEPT_GARBAGE        :: 4;
+    URL_ACCEPT_GARBAGE            :: 5;
+    DEFAULT_OR_URL                :: 8;
+    DEFAULT_OR_URL_ACCEPT_GARBAGE :: 12;
+
+    SIMDUTF_BASE64_DEFAULT                       :: DEFAULT;
+    SIMDUTF_BASE64_URL                           :: URL;
+    SIMDUTF_BASE64_DEFAULT_NO_PADDING            :: DEFAULT_NO_PADDING;
+    SIMDUTF_BASE64_URL_WITH_PADDING              :: URL_WITH_PADDING;
+    SIMDUTF_BASE64_DEFAULT_ACCEPT_GARBAGE        :: DEFAULT_ACCEPT_GARBAGE;
+    SIMDUTF_BASE64_URL_ACCEPT_GARBAGE            :: URL_ACCEPT_GARBAGE;
+    SIMDUTF_BASE64_DEFAULT_OR_URL                :: DEFAULT_OR_URL;
+    SIMDUTF_BASE64_DEFAULT_OR_URL_ACCEPT_GARBAGE :: DEFAULT_OR_URL_ACCEPT_GARBAGE;
+}
+
+simdutf_last_chunk_handling_options :: enum s32 {
+    LOOSE               :: 0;
+    STRICT              :: 1;
+    STOP_BEFORE_PARTIAL :: 2;
+    ONLY_FULL_CHUNKS    :: 3;
+
+    SIMDUTF_LAST_CHUNK_LOOSE               :: LOOSE;
+    SIMDUTF_LAST_CHUNK_STRICT              :: STRICT;
+    SIMDUTF_LAST_CHUNK_STOP_BEFORE_PARTIAL :: STOP_BEFORE_PARTIAL;
+    SIMDUTF_LAST_CHUNK_ONLY_FULL_CHUNKS    :: ONLY_FULL_CHUNKS;
+}
+
+/* maximal binary length estimators */
+simdutf_maximal_binary_length_from_base64 :: (input: *u8, length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_maximal_binary_length_from_base64_utf16 :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
+
+/* base64 decoding/encoding */
+simdutf_base64_to_binary :: (input: *u8, length: u64, output: *u8, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options) -> simdutf_result #foreign libsimdutf;
+
+simdutf_base64_to_binary_utf16 :: (input: *u16, length: u64, output: *u8, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options) -> simdutf_result #foreign libsimdutf;
+
+simdutf_base64_length_from_binary :: (length: u64, options: simdutf_base64_options) -> u64 #foreign libsimdutf;
+
+simdutf_base64_length_from_binary_with_lines :: (length: u64, options: simdutf_base64_options, line_length: u64) -> u64 #foreign libsimdutf;
+
+simdutf_binary_to_base64 :: (input: *u8, length: u64, output: *u8, options: simdutf_base64_options) -> u64 #foreign libsimdutf;
+
+simdutf_binary_to_base64_with_lines :: (input: *u8, length: u64, output: *u8, line_length: u64, options: simdutf_base64_options) -> u64 #foreign libsimdutf;
+
+/* safe decoding that provides an in/out outlen parameter */
+simdutf_base64_to_binary_safe :: (input: *u8, length: u64, output: *u8, outlen: *u64, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options, decode_up_to_bad_char: bool) -> simdutf_result #foreign libsimdutf;
+
+simdutf_base64_to_binary_safe_utf16 :: (input: *u16, length: u64, output: *u8, outlen: *u64, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options, decode_up_to_bad_char: bool) -> simdutf_result #foreign libsimdutf;
 
 #scope_file
 

@@ -12,6 +12,6 @@ PRs welcome.
 
 ## Notes
 
-For some reason, while compiling (as of jai beta 0.2.021) we get a lot of compiler errors complaining about bindings. Luckily things still compiler and work, but the errors are annoying.
+For some reason, while generating bindings (as of jai beta 0.2.021) we get a lot of errors. Luckily bindings still compile and work.
 
-Not sure yet if compiler or bindings issue..
+Not sure what the issue is, but that's a problem for the future...
