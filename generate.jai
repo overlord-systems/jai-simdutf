@@ -12,7 +12,7 @@ build :: () {
     }
 }
 
-// Current sources are from simdutf v7.7.0
+// Current sources are from simdutf v9.9.0
 BINDINGS_SRC_PATH :: "src/simdutf/src/simdutf.cpp";
 BINDINGS_INCLUDE_DIRS :: string.["src/simdutf/include"];
 
@@ -107,7 +107,16 @@ generate_bindings :: (args: []string) -> bool {
 
     opts.visitor = simdutf_visitor;
     opts.generate_compile_time_struct_checks = false;
-    array_add(*opts.extra_clang_arguments, "-x", "c++");
+
+    // The order matters! c++ must be before C includes.
+    array_add(*opts.system_include_paths,
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+    );
+    jai_clang_include_paths := get_default_system_include_paths();
+    array_add(*opts.system_include_paths, ..jai_clang_include_paths);
+
+    array_add(*opts.extra_clang_arguments, "-x", "c++", "-std=c++17");
 
     #if CPU == .X64 {
         array_add(*opts.extra_clang_arguments, "-march=haswell");
@@ -138,6 +147,14 @@ compile_simdutf :: () -> ok: bool {
 
         success = build_cpp_static_lib("windows/bin/x64/libsimdutf", ..src_files, extra=.[
             tprint("/I%", BUILD_INCLUDE_DIRS[0]),
+            "-std=c++17",
+            "-std=c++17", // Required since simdutf 9.0.0
+
+            // Remove c++ stdlib dependency
+            "-nostdlib++",
+            "-fno-rtti",
+            "-fno-exceptions",
+            "-DSIMDUTF_NO_LIBCXX=1",
         ]);
 
     } else #if OS == .LINUX {
@@ -150,6 +167,13 @@ compile_simdutf :: () -> ok: bool {
 
         success = build_cpp_static_lib("linux/bin/x64/libsimdutf", ..src_files, extra=.[
             tprint("-I%", BUILD_INCLUDE_DIRS[0]),
+            "-std=c++17", // Required since simdutf 9.0.0
+
+            // Remove c++ stdlib dependency
+            "-nostdlib++",
+            "-fno-rtti",
+            "-fno-exceptions",
+            "-DSIMDUTF_NO_LIBCXX=1",
         ]);
 
     } else #if OS == .MACOS {
@@ -158,6 +182,13 @@ compile_simdutf :: () -> ok: bool {
 
         success = build_cpp_static_lib( "macos/bin/arm64/libsimdutf", ..src_files, extra=.[
             tprint("-I%", BUILD_INCLUDE_DIRS[0]),
+            "-std=c++17", // Required since simdutf 9.0.0
+
+            // Remove c++ stdlib dependency
+            "-nostdlib++",
+            "-fno-rtti",
+            "-fno-exceptions",
+            "-DSIMDUTF_NO_LIBCXX=1",
         ]);
 
     } else {
@@ -175,6 +206,7 @@ simdutf_visitor :: (decl: *Declaration, parent_decl: *Declaration) -> Declaratio
     }
 
     // This parent is actually "implementation_VTable"
+
     if parent_decl {
 
         if parent_decl.name == "implementation" {
@@ -216,7 +248,6 @@ simdutf_visitor :: (decl: *Declaration, parent_decl: *Declaration) -> Declaratio
 #import "Check";
 #import "Bindings_Generator";
 #import "File";
-
 FOOTER_WIN :: #string END
 libsimdutf :: #library,no_dll "bin/x64/libsimdutf";
 END
