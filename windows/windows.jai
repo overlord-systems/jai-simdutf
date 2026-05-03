@@ -1,10 +1,12 @@
 //
 // This file was auto-generated using the following command:
 //
-// jai generate.jai - -compile
+// jai generate.jai
 //
 
 
+
+SIMDUTF_CPLUSPLUS17 :: 1;
 
 SIMDUTF_CPLUSPLUS14 :: 1;
 
@@ -16,14 +18,20 @@ SIMDUTF_CLANG_VISUAL_STUDIO :: 1;
 
 SIMDUTF_IS_X86_64 :: 1;
 
-SIMDUTF_VERSION_STRING :: "8.0.0";
+SIMDUTF_VERSION_STRING :: "9.0.0";
 
 SIMDUTF_FEATURE_DETECT_ENCODING :: 1;
+
 SIMDUTF_FEATURE_ASCII :: 1;
+
 SIMDUTF_FEATURE_LATIN1 :: 1;
+
 SIMDUTF_FEATURE_UTF8 :: 1;
+
 SIMDUTF_FEATURE_UTF16 :: 1;
+
 SIMDUTF_FEATURE_UTF32 :: 1;
+
 SIMDUTF_FEATURE_BASE64 :: 1;
 
 SIMDUTF_NEED_TRAILING_ZEROES :: 1;
@@ -53,8 +61,8 @@ SIMDUTF_CAN_ALWAYS_RUN_FALLBACK :: SIMDUTF_IMPLEMENTATION_FALLBACK;
 SIMDUTF_CAN_ALWAYS_RUN_LSX :: 0;
 
 SIMDUTF_IMPLEMENTATION_FALLBACK :: 0;
-/* end file src/generic/base64.h */
-/* begin file src/generic/find.h */
+
+SIMDUTF_USE_STATIC_INITIALIZATION :: 0;
 
 encoding_type :: enum s32 {
     UTF8        :: 1;
@@ -84,6 +92,8 @@ BOM :: struct {
     * @return the corresponding encoding
     */
     check_bom :: (byte: *u8, length: u64) -> encoding_type #foreign libsimdutf "?check_bom@BOM@simdutf@@YA?AW4encoding_type@2@PEBE_K@Z";
+
+    // check_bom :: (byte: *u8, length: u64) -> encoding_type #foreign libsimdutf "?check_bom@BOM@simdutf@@YA?AW4encoding_type@2@PEBD_K@Z";
 
     /**
     * Returns the size, in bytes, of the BOM for a given encoding type.
@@ -145,7 +155,7 @@ full_result :: struct {
 }
 
 SIMDUTF_VERSION :: enum s32 {
-    MAJOR    :: 8;
+    MAJOR    :: 9;
 
     MINOR    :: 0;
 
@@ -1124,6 +1134,54 @@ convert_utf16le_to_utf8_with_errors :: (input: *u16, length: u64, utf8_buffer: *
 convert_utf16be_to_utf8_with_errors :: (input: *u16, length: u64, utf8_buffer: *u8) -> result #cpp_return_type_is_non_pod #foreign libsimdutf "?convert_utf16be_to_utf8_with_errors@simdutf@@YA?AUresult@1@PEB_S_KPEAD@Z";
 
 /**
+* Convert possibly broken UTF-16LE string into UTF-8 string, replacing
+* unpaired surrogates with the Unicode replacement character U+FFFD.
+*
+* This function always succeeds: unpaired surrogates are replaced with
+* U+FFFD (3 bytes in UTF-8: 0xEF 0xBF 0xBD).
+*
+* This function is not BOM-aware.
+*
+* @param input         the UTF-16LE string to convert
+* @param length        the length of the string in 2-byte code units (char16_t)
+* @param utf8_buffer   the pointer to buffer that can hold conversion result
+* @return number of written code units
+*/
+convert_utf16le_to_utf8_with_replacement :: (input: *u16, length: u64, utf8_buffer: *u8) -> u64 #foreign libsimdutf "?convert_utf16le_to_utf8_with_replacement@simdutf@@YA_KPEB_S_KPEAD@Z";
+
+/**
+* Convert possibly broken UTF-16BE string into UTF-8 string, replacing
+* unpaired surrogates with the Unicode replacement character U+FFFD.
+*
+* This function always succeeds: unpaired surrogates are replaced with
+* U+FFFD (3 bytes in UTF-8: 0xEF 0xBF 0xBD).
+*
+* This function is not BOM-aware.
+*
+* @param input         the UTF-16BE string to convert
+* @param length        the length of the string in 2-byte code units (char16_t)
+* @param utf8_buffer   the pointer to buffer that can hold conversion result
+* @return number of written code units
+*/
+convert_utf16be_to_utf8_with_replacement :: (input: *u16, length: u64, utf8_buffer: *u8) -> u64 #foreign libsimdutf "?convert_utf16be_to_utf8_with_replacement@simdutf@@YA_KPEB_S_KPEAD@Z";
+
+/**
+* Convert possibly broken UTF-16 string (native endianness) into UTF-8 string,
+* replacing unpaired surrogates with the Unicode replacement character U+FFFD.
+*
+* This function always succeeds: unpaired surrogates are replaced with
+* U+FFFD (3 bytes in UTF-8: 0xEF 0xBF 0xBD).
+*
+* This function is not BOM-aware.
+*
+* @param input         the UTF-16 string to convert
+* @param length        the length of the string in 2-byte code units (char16_t)
+* @param utf8_buffer   the pointer to buffer that can hold conversion result
+* @return number of written code units
+*/
+convert_utf16_to_utf8_with_replacement :: (input: *u16, length: u64, utf8_buffer: *u8) -> u64 #foreign libsimdutf "?convert_utf16_to_utf8_with_replacement@simdutf@@YA_KPEB_S_KPEAD@Z";
+
+/**
 * Using native endianness, convert valid UTF-16 string into UTF-8 string.
 *
 * This function assumes that the input string is valid UTF-16.
@@ -2075,6 +2133,39 @@ maximal_binary_length_from_base64 :: (input: *u8, length: u64) -> u64 #foreign l
 maximal_binary_length_from_base64 :: (input: *u16, length: u64) -> u64 #foreign libsimdutf "?maximal_binary_length_from_base64@simdutf@@YA_KPEB_S_K@Z";
 
 /**
+* Compute the binary length from a base64 input.
+* This function is useful for base64 inputs that may contain ASCII whitespaces
+* (such as line breaks). For such inputs, the result is exact, and for any
+* inputs the result can be used to size the output buffer passed to
+* `base64_to_binary`.
+*
+* The function ignores whitespace and does not require padding characters
+* ('=').
+*
+* @param input         the base64 input to process
+* @param length        the length of the base64 input in bytes
+* @return number of binary bytes
+*/
+binary_length_from_base64 :: (input: *u8, length: u64) -> u64 #foreign libsimdutf "?binary_length_from_base64@simdutf@@YA_KPEBD_K@Z";
+
+/**
+* Compute the binary length from a base64 input.
+* This function is useful for base64 inputs that may contain ASCII whitespaces
+* (such as line breaks). For such inputs, the result is exact, and for any
+* inputs the result can be used to size the output buffer passed to
+* `base64_to_binary`.
+*
+* The function ignores whitespace and does not require padding characters
+* ('=').
+*
+* @param input         the base64 input to process, in ASCII stored as 16-bit
+* units
+* @param length        the length of the base64 input in 16-bit units
+* @return number of binary bytes
+*/
+binary_length_from_base64 :: (input: *u16, length: u64) -> u64 #foreign libsimdutf "?binary_length_from_base64@simdutf@@YA_KPEB_S_K@Z";
+
+/**
 * Convert a base64 input to a binary output.
 *
 * This function follows the WHATWG forgiving-base64 format, which means that it
@@ -2257,6 +2348,105 @@ binary_to_base64_with_lines :: (input: *u8, length: u64, output: *u8, line_lengt
 base64_to_binary :: (input: *u16, length: u64, output: *u8, options: base64_options = .default, last_chunk_options: last_chunk_handling_options = .loose) -> result #cpp_return_type_is_non_pod #foreign libsimdutf "?base64_to_binary@simdutf@@YA?AUresult@1@PEB_S_KPEADW4base64_options@1@W4last_chunk_handling_options@1@@Z";
 
 /**
+* Convert a base64 input to a binary output while returning more details
+* than base64_to_binary.
+*
+* This function follows the WHATWG forgiving-base64 format, which means that it
+* will ignore any ASCII spaces in the input. You may provide a padded input
+* (with one or two equal signs at the end) or an unpadded input (without any
+* equal signs at the end).
+*
+* See https://infra.spec.whatwg.org/#forgiving-base64-decode
+*
+* Unlike base64_to_binary, this function returns a full_result with both
+* input_count and output_count, so you always know how much input was consumed
+* and how much output was written. There are three cases where the input may
+* not be fully consumed:
+*
+* 1. stop_before_partial: When last_chunk_options is set to
+*    stop_before_partial, any incomplete 4-character group at the end of the
+*    input is left unconsumed. This is useful for streaming/chunked decoding
+*    where you can carry over the unconsumed input to the next chunk.
+*
+* 2. INVALID_BASE64_CHARACTER: The input contains a character that is not a
+*    valid base64 character. In this case, input_count indicates where the
+*    invalid character was found.
+*
+* 3. BASE64_INPUT_REMAINDER: When last_chunk_options is loose, the input
+*    contains a number of base64 characters that, when divided by 4, leaves
+*    a single remainder character (which cannot encode any bytes).
+*
+* You should call this function with a buffer that is at least
+* maximal_binary_length_from_base64(input, length) bytes long. If you fail to
+* provide that much space, the function may cause a buffer overflow.
+*
+* @param input         the base64 string to process
+* @param length        the length of the string in bytes
+* @param output        the pointer to a buffer that can hold the conversion
+* result (should be at least maximal_binary_length_from_base64(input, length)
+* bytes long).
+* @param options       the base64 options to use, can be base64_default or
+* base64_url, is base64_default by default.
+* @param last_chunk_options the last chunk handling options,
+* last_chunk_handling_options::loose by default
+* but can also be last_chunk_handling_options::strict or
+* last_chunk_handling_options::stop_before_partial.
+* @return a full_result struct (of type simdutf::full_result containing the
+* three fields error, input_count and output_count).
+*/
+base64_to_binary_details :: (input: *u8, length: u64, output: *u8, options: base64_options = .default, last_chunk_options: last_chunk_handling_options = .loose) -> full_result #cpp_return_type_is_non_pod #foreign libsimdutf "?base64_to_binary_details@simdutf@@YA?AUfull_result@1@PEBD_KPEADW4base64_options@1@W4last_chunk_handling_options@1@@Z";
+
+/**
+* Convert a base64 input to a binary output while returning more details
+* than base64_to_binary.
+*
+* This function follows the WHATWG forgiving-base64 format, which means that it
+* will ignore any ASCII spaces in the input. You may provide a padded input
+* (with one or two equal signs at the end) or an unpadded input (without any
+* equal signs at the end).
+*
+* See https://infra.spec.whatwg.org/#forgiving-base64-decode
+*
+* Unlike base64_to_binary, this function returns a full_result with both
+* input_count and output_count, so you always know how much input was consumed
+* and how much output was written. There are three cases where the input may
+* not be fully consumed:
+*
+* 1. stop_before_partial: When last_chunk_options is set to
+*    stop_before_partial, any incomplete 4-character group at the end of the
+*    input is left unconsumed. This is useful for streaming/chunked decoding
+*    where you can carry over the unconsumed input to the next chunk.
+*
+* 2. INVALID_BASE64_CHARACTER: The input contains a character that is not a
+*    valid base64 character. In this case, input_count indicates where the
+*    invalid character was found.
+*
+* 3. BASE64_INPUT_REMAINDER: When last_chunk_options is loose, the input
+*    contains a number of base64 characters that, when divided by 4, leaves
+*    a single remainder character (which cannot encode any bytes).
+*
+* You should call this function with a buffer that is at least
+* maximal_binary_length_from_base64(input, length) bytes long. If you fail to
+* provide that much space, the function may cause a buffer overflow.
+*
+* @param input         the base64 string to process, in ASCII stored as 16-bit
+* units
+* @param length        the length of the string in 16-bit units
+* @param output        the pointer to a buffer that can hold the conversion
+* result (should be at least maximal_binary_length_from_base64(input, length)
+* bytes long).
+* @param options       the base64 options to use, can be base64_default or
+* base64_url, is base64_default by default.
+* @param last_chunk_options the last chunk handling options,
+* last_chunk_handling_options::loose by default
+* but can also be last_chunk_handling_options::strict or
+* last_chunk_handling_options::stop_before_partial.
+* @return a full_result struct (of type simdutf::full_result containing the
+* three fields error, input_count and output_count).
+*/
+base64_to_binary_details :: (input: *u16, length: u64, output: *u8, options: base64_options = .default, last_chunk_options: last_chunk_handling_options = .loose) -> full_result #cpp_return_type_is_non_pod #foreign libsimdutf "?base64_to_binary_details@simdutf@@YA?AUfull_result@1@PEB_S_KPEADW4base64_options@1@W4last_chunk_handling_options@1@@Z";
+
+/**
 * Check if a character is an ignorable base64 character.
 * Checking a large input, character by character, is not computationally
 * efficient.
@@ -2269,6 +2459,21 @@ base64_to_binary :: (input: *u16, length: u64, output: *u8, options: base64_opti
 base64_ignorable :: (input: u8, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_ignorable@simdutf@@YA_NDW4base64_options@1@@Z";
 
 base64_ignorable :: (input: u16, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_ignorable@simdutf@@YA_N_SW4base64_options@1@@Z";
+
+/**
+* Check if a character is a valid base64 character.
+* Checking a large input, character by character, is not computationally
+* efficient.
+* Note that padding characters are not considered valid base64 characters in
+* this context, nor are spaces.
+*
+* @param input         the character to check
+* @param options       the base64 options to use, is base64_default by default.
+* @return true if the character is a base64 character, false otherwise.
+*/
+base64_valid :: (input: u8, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_valid@simdutf@@YA_NDW4base64_options@1@@Z";
+
+base64_valid :: (input: u16, options: base64_options = .default) -> bool #foreign libsimdutf "?base64_valid@simdutf@@YA_N_SW4base64_options@1@@Z";
 
 /**
 * Convert a base64 input to a binary output.
@@ -2620,6 +2825,12 @@ simdutf_result :: struct {
     count: u64; /* position of error or number of code units validated */
 }
 
+simdutf_full_result :: struct {
+    error:        simdutf_error_code;
+    input_count:  u64; /* number of input units consumed */
+    output_count: u64; /* number of output bytes written */
+}
+
 simdutf_encoding_type :: enum s32 {
     UNSPECIFIED :: 0;
     UTF8        :: 1;
@@ -2707,6 +2918,8 @@ simdutf_utf32_length_from_utf8 :: (input: *u8, length: u64) -> u64 #foreign libs
 
 simdutf_utf8_length_from_utf16 :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
 
+simdutf_utf8_length_from_utf32 :: (input: *u32, length: u64) -> u64 #foreign libsimdutf;
+
 simdutf_utf8_length_from_utf16_with_replacement :: (input: *u16, length: u64) -> simdutf_result #foreign libsimdutf;
 
 simdutf_utf8_length_from_utf16le :: (input: *u16, length: u64) -> u64 #foreign libsimdutf;
@@ -2725,6 +2938,8 @@ simdutf_convert_latin1_to_utf8_safe :: (input: *u8, length: u64, output: *u8, ut
 simdutf_convert_latin1_to_utf16le :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
 
 simdutf_convert_latin1_to_utf16be :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
+
+simdutf_convert_latin1_to_utf16 :: (input: *u8, length: u64, output: *u16) -> u64 #foreign libsimdutf;
 
 simdutf_convert_latin1_to_utf32 :: (input: *u8, length: u64, output: *u32) -> u64 #foreign libsimdutf;
 
@@ -2891,6 +3106,16 @@ simdutf_binary_to_base64_with_lines :: (input: *u8, length: u64, output: *u8, li
 simdutf_base64_to_binary_safe :: (input: *u8, length: u64, output: *u8, outlen: *u64, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options, decode_up_to_bad_char: bool) -> simdutf_result #foreign libsimdutf;
 
 simdutf_base64_to_binary_safe_utf16 :: (input: *u16, length: u64, output: *u8, outlen: *u64, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options, decode_up_to_bad_char: bool) -> simdutf_result #foreign libsimdutf;
+
+/* detailed decoding returning input_count and output_count */
+simdutf_base64_to_binary_details :: (input: *u8, length: u64, output: *u8, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options) -> simdutf_full_result #foreign libsimdutf;
+
+simdutf_base64_to_binary_details_utf16 :: (input: *u16, length: u64, output: *u8, options: simdutf_base64_options, last_chunk_options: simdutf_last_chunk_handling_options) -> simdutf_full_result #foreign libsimdutf;
+
+/* single-character base64 validation */
+simdutf_base64_valid :: (input: u8, options: simdutf_base64_options) -> bool #foreign libsimdutf;
+
+simdutf_base64_valid_utf16 :: (input: u16, options: simdutf_base64_options) -> bool #foreign libsimdutf;
 
 #scope_file
 

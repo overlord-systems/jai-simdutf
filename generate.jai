@@ -116,6 +116,7 @@ generate_bindings :: (args: []string) -> bool {
     jai_clang_include_paths := get_default_system_include_paths();
     array_add(*opts.system_include_paths, ..jai_clang_include_paths);
 
+     // C++17 is required since simdutf 9.0.0
     array_add(*opts.extra_clang_arguments, "-x", "c++", "-std=c++17");
 
     #if CPU == .X64 {
@@ -147,14 +148,12 @@ compile_simdutf :: () -> ok: bool {
 
         success = build_cpp_static_lib("windows/bin/x64/libsimdutf", ..src_files, extra=.[
             tprint("/I%", BUILD_INCLUDE_DIRS[0]),
-            "-std=c++17",
-            "-std=c++17", // Required since simdutf 9.0.0
+            "/std:c++17", // Required since simdutf 9.0.0
 
-            // Remove c++ stdlib dependency
-            "-nostdlib++",
-            "-fno-rtti",
-            "-fno-exceptions",
-            "-DSIMDUTF_NO_LIBCXX=1",
+            // Remove c++ stdlib dependency (as close as we can)
+            "/GR-", // Same as "-fno-rtti"
+            "/EHsc-", // Same as "-fno-exceptions"
+            "/D SIMDUTF_NO_LIBCXX=1",
         ]);
 
     } else #if OS == .LINUX {
