@@ -93,16 +93,27 @@ generate_bindings :: (args: []string) -> bool {
         opts.footer = FOOTER_LINUX;
         opts.generate_library_declarations = false;
 
-    } /*else #if OS == .MACOS {
+    } else #if OS == .MACOS {
         output_filename = "macos/macos.jai";
-    }*/ else {
+
+        array_add(*opts.library_search_paths, "macos/bin/arm64");
+
+        opts.footer = FOOTER_MAC;
+        opts.generate_library_declarations = false;
+
+    } else {
         assert(false, "this OS is currently unsupported. You might be able to add support for it though!");
     }
 
     opts.visitor = simdutf_visitor;
     opts.generate_compile_time_struct_checks = false;
     array_add(*opts.extra_clang_arguments, "-x", "c++");
-    array_add(*opts.extra_clang_arguments, "-march=haswell");
+
+    #if CPU == .X64 {
+        array_add(*opts.extra_clang_arguments, "-march=haswell");
+    } else #if CPU == .ARM64 {
+        array_add(*opts.extra_clang_arguments, "-march=armv8-a");
+    }
 
     ok := generate_bindings(opts, output_filename);
     if !ok return false;
@@ -140,6 +151,15 @@ compile_simdutf :: () -> ok: bool {
         success = build_cpp_static_lib("linux/bin/x64/libsimdutf", ..src_files, extra=.[
             tprint("-I%", BUILD_INCLUDE_DIRS[0]),
         ]);
+
+    } else #if OS == .MACOS {
+
+        make_directory_if_it_does_not_exist("macos/bin/arm64", recursive=true);
+
+        success = build_cpp_static_lib( "macos/bin/arm64/libsimdutf", ..src_files, extra=.[
+            tprint("-I%", BUILD_INCLUDE_DIRS[0]),
+        ]);
+
     } else {
         assert(false, "this OS is currently unsupported. You might be able to add support for it though!");
     }
@@ -203,4 +223,8 @@ END
 
 FOOTER_LINUX :: #string END
 libsimdutf :: #library,no_dll "bin/x64/libsimdutf";
+END
+
+FOOTER_MAC :: #string END
+libsimdutf :: #library,no_dll "bin/arm64/libsimdutf";
 END
